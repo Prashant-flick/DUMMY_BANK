@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form with Email, Password, and Amount</title>
+</head>
+<body>
+    <h1>Form Submission</h1>
+    <form id="walletForm" action="/HDFC/addMoneyToWallet" method="POST">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Add Money</button>
+    </form>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const token = getQueryParam('token');
+        const userId = getQueryParam('userId');
+        const amount = getQueryParam('amount');
+
+        const form = document.getElementById('walletForm');
+
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = 'token';
+        tokenInput.value = token;
+
+        const userIdInput = document.createElement('input');
+        userIdInput.type = 'hidden';
+        userIdInput.name = 'userId';
+        userIdInput.value = userId;
+
+        const amountInput = document.createElement('input');
+        amountInput.type = 'hidden';
+        amountInput.name = 'amount';
+        amountInput.value = amount;
+
+        form.appendChild(tokenInput);
+        form.appendChild(userIdInput);
+        form.appendChild(amountInput);
+
+        form.action += `?token=${encodeURIComponent(token)}&userId=${encodeURIComponent(userId)}&amount=${encodeURIComponent(amount)}`;
+    </script>
+
+    <script>
+        document.getElementById('walletForm').onsubmit = async function(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(new FormData(form)).toString()
+                });
+
+                const result = await response.json();
+
+                if (response.status===200) {
+                    if (result?.redirectUrl) {
+                        window.location.href = result.redirectUrl;
+                    } else {
+                        alert(result.message || "Transaction successful");
+                    }
+                } else {
+                    alert(result.message || "An error occurred");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while processing your request.");
+            }
+        };
+    </script>
+</body>
+</html>
