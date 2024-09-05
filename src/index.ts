@@ -19,6 +19,10 @@
         res.render('pages/createAccount.ejs')
     })
 
+    app.get('/HDFC/addMoneyToAccount', (req, res) => {
+        res.render('pages/addMoneyToAcc')
+    })
+
     app.post('/HDFC/createAccount', async(req, res)=> {
         const {email, password, amount, number}:{email: string, password: string, amount: number, number: string} = req.body
         
@@ -44,28 +48,29 @@
                 })                
 
                 const bankBalance = bank?.balance || 0
-                if(bankBalance>=amount){
-                    const data = await client.user.create({
-                        data: {
-                            email: email,
-                            password: hashPassword,
-                            balance: Number(amount)*100,
-                            number: number
-                        }
-                    }) 
-
-                    if(data){
-                        await client.bank.update({
+                if(bankBalance>=amount*100){
+                    const transaction = await client.$transaction([
+                        client.user.create({
+                            data: {
+                                email: email,
+                                password: hashPassword,
+                                balance: Number(amount)*100,
+                                number: number
+                            }
+                        }),
+                        client.bank.update({
                             where:{
                                 id: 1
                             },
                             data: {
                                 balance: {
-                                    decrement: Number(amount)
+                                    decrement: Number(amount)*100
                                 }
                             }
                         })
-
+                    ])
+                    
+                    if(transaction && transaction.length>0){
                         res.status(200)
                         .json({
                             message: "user created successfully"
@@ -157,7 +162,7 @@
                                 res.status(200)
                                 .json({
                                     message: "transaction successfull",
-                                    redirectUrl: "http://localhost:3001",
+                                    redirectUrl: "http://localhost:3001/transfer",
                                 })
 
                             }else{
@@ -189,7 +194,86 @@
         }
     })
 
+    app.post('/HDFC/addMoneyToAccount', async(req, res) => {
+        const { email, password, amount}:{email: string, password: string, amount: number} = req.body
 
+        if(!email || !password || !amount){
+            res.status(400)
+            .json({
+                message: "all feilds are required"
+            })
+            
+        }else{
+            const user = await client.user.findFirst({
+                where:{
+                    email: email
+                }
+            })
+
+            if(!user){
+                res.status(400)
+                .json({
+                    message: "user doesn't exist"
+                })
+            }else{
+                const verifyPassword = await bcrypt.compare(password, user.password)
+                if(verifyPassword){
+                    const bank = await client.bank.findFirst({
+                        where: {
+                            id: 1
+                        }
+                    })
+
+                    if(!bank || bank?.balance<(amount*100)){
+                        res.status(400)
+                        .json({
+                            message: "insufficient bank balance"
+                        })
+                    }
+
+                    const transaction = await client.$transaction([
+                        client.bank.update({
+                            where:{
+                                id: 1
+                            },
+                            data: {
+                                balance: {
+                                    decrement: Number(amount)*100
+                                }
+                            }
+                        }),
+                        client.user.update({
+                            where: {
+                                email: email
+                            },
+                            data: {
+                                balance: {
+                                    increment: Number(amount)*100
+                                }
+                            }
+                        })
+                    ])
+                    
+                    if(transaction){
+                        res.status(200)
+                        .json({
+                            message: "success"
+                        })
+                    }else{
+                        res.status(400)
+                        .json({
+                            message: "Upadating amount failed"
+                        })
+                    }
+                }else{
+                    res.status(400)
+                    .json({
+                        message: "invalid Password"
+                    })
+                }
+            }
+        }
+    })
 
 
     app.listen(3004, ()=>{

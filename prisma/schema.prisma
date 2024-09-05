@@ -26,7 +26,7 @@ model User {
   id          Int           @id @default(autoincrement())
   balance     Int
   number      String        @unique
-  email       String
+  email       String        @unique
   password    String
   Transaction Transaction[]
 }

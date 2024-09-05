@@ -28,6 +28,9 @@ app.get('/HDFC/addMoneyToWallet', (req, res) => {
 app.get('/HDFC/createAccount', (req, res) => {
     res.render('pages/createAccount.ejs');
 });
+app.get('/HDFC/addMoneyToAccount', (req, res) => {
+    res.render('pages/addMoneyToAcc');
+});
 app.post('/HDFC/createAccount', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password, amount, number } = req.body;
     if (!email || !password || !amount) {
@@ -51,26 +54,28 @@ app.post('/HDFC/createAccount', (req, res) => __awaiter(void 0, void 0, void 0, 
                 }
             });
             const bankBalance = (bank === null || bank === void 0 ? void 0 : bank.balance) || 0;
-            if (bankBalance >= amount) {
-                const data = yield client.user.create({
-                    data: {
-                        email: email,
-                        password: hashPassword,
-                        balance: Number(amount) * 100,
-                        number: number
-                    }
-                });
-                if (data) {
-                    yield client.bank.update({
+            if (bankBalance >= amount * 100) {
+                const transaction = yield client.$transaction([
+                    client.user.create({
+                        data: {
+                            email: email,
+                            password: hashPassword,
+                            balance: Number(amount) * 100,
+                            number: number
+                        }
+                    }),
+                    client.bank.update({
                         where: {
                             id: 1
                         },
                         data: {
                             balance: {
-                                decrement: Number(amount)
+                                decrement: Number(amount) * 100
                             }
                         }
-                    });
+                    })
+                ]);
+                if (transaction && transaction.length > 0) {
                     res.status(200)
                         .json({
                         message: "user created successfully"
@@ -160,7 +165,7 @@ app.post('/HDFC/addMoneyToWallet', (req, res) => __awaiter(void 0, void 0, void 
                             res.status(200)
                                 .json({
                                 message: "transaction successfull",
-                                redirectUrl: "http://localhost:3001",
+                                redirectUrl: "http://localhost:3001/transfer",
                             });
                         }
                         else {
@@ -181,6 +186,84 @@ app.post('/HDFC/addMoneyToWallet', (req, res) => __awaiter(void 0, void 0, void 
                     res.status(400)
                         .json({
                         message: "low Balance"
+                    });
+                }
+            }
+            else {
+                res.status(400)
+                    .json({
+                    message: "invalid Password"
+                });
+            }
+        }
+    }
+}));
+app.post('/HDFC/addMoneyToAccount', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, password, amount } = req.body;
+    if (!email || !password || !amount) {
+        res.status(400)
+            .json({
+            message: "all feilds are required"
+        });
+    }
+    else {
+        const user = yield client.user.findFirst({
+            where: {
+                email: email
+            }
+        });
+        if (!user) {
+            res.status(400)
+                .json({
+                message: "user doesn't exist"
+            });
+        }
+        else {
+            const verifyPassword = yield bcrypt_1.default.compare(password, user.password);
+            if (verifyPassword) {
+                const bank = yield client.bank.findFirst({
+                    where: {
+                        id: 1
+                    }
+                });
+                if (!bank || (bank === null || bank === void 0 ? void 0 : bank.balance) < (amount * 100)) {
+                    res.status(400)
+                        .json({
+                        message: "insufficient bank balance"
+                    });
+                }
+                const transaction = yield client.$transaction([
+                    client.bank.update({
+                        where: {
+                            id: 1
+                        },
+                        data: {
+                            balance: {
+                                decrement: Number(amount) * 100
+                            }
+                        }
+                    }),
+                    client.user.update({
+                        where: {
+                            email: email
+                        },
+                        data: {
+                            balance: {
+                                increment: Number(amount) * 100
+                            }
+                        }
+                    })
+                ]);
+                if (transaction) {
+                    res.status(200)
+                        .json({
+                        message: "success"
+                    });
+                }
+                else {
+                    res.status(400)
+                        .json({
+                        message: "Upadating amount failed"
                     });
                 }
             }
