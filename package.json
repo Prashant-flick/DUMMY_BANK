@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "npm run build && nodemon dist/index.js",
     "build": "npx tsc",
-    "start": "nodemon src/index.ts"
+    "start": "nodemon src/index.ts",
+    "db:generate": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -22,9 +23,11 @@
   "dependencies": {
     "@prisma/client": "^5.19.1",
     "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "ejs": "^3.1.10",
     "prisma": "^5.19.1"
   }

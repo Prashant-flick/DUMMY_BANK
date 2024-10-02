@@ -17,7 +17,11 @@ const body_parser_1 = __importDefault(require("body-parser"));
 const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const axios_1 = __importDefault(require("axios"));
+const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
+app.use((0, cors_1.default)({
+    origin: "*"
+}));
 app.use(express_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: false }));
 const client = new client_1.PrismaClient();
@@ -148,7 +152,7 @@ app.post('/HDFC/addMoneyToWallet', (req, res) => __awaiter(void 0, void 0, void 
                         })
                     ]);
                     if (transaction) {
-                        const webHook = yield axios_1.default.post('http://localhost:3003/hdfcWebHook', {
+                        const webHook = yield axios_1.default.post('https://bank-webhook.jackbythehedge.co.uk/hdfcWebHook', {
                             token: token,
                             user_identifier: transaction[0].userIdPaytm,
                             amount: amount

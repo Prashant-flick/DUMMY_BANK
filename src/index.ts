@@ -3,8 +3,13 @@
     import { PrismaClient} from "@prisma/client"
     import bcrypt from "bcrypt"
     import axios from "axios"
+    import cors from "cors"
 
     const app = express()
+
+    app.use(cors({
+        origin: "*"
+    }))
     app.use(express.json())
     app.use(bodyParser.urlencoded({ extended: false }));
     const client = new PrismaClient()
@@ -143,7 +148,7 @@
                             })
                         ])
                         if(transaction){
-                            const webHook = await axios.post('http://localhost:3003/hdfcWebHook', {
+                            const webHook = await axios.post('https://bank-webhook.jackbythehedge.co.uk/hdfcWebHook', {
                                 token: token,
                                 user_identifier: transaction[0].userIdPaytm,
                                 amount: amount
