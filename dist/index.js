@@ -169,7 +169,7 @@ app.post('/HDFC/addMoneyToWallet', (req, res) => __awaiter(void 0, void 0, void 
                             res.status(200)
                                 .json({
                                 message: "transaction successfull",
-                                redirectUrl: "http://localhost:3001/transfer",
+                                redirectUrl: "http://user1.jackbythehedge.co.uk/transfer",
                             });
                         }
                         else {

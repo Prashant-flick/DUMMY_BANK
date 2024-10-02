@@ -39,5 +39,5 @@ jobs:
           sudo docker pull prashantflick/dummy-bank:latest
           sudo docker stop dummy-bank || true
           sudo docker rm dummy-bank || true
-          sudo docker run --name dummy-bank -d -p 3004:3004 prashantflick/dummy-bank:latest
+          sudo docker run --name dummy-bank -d -p 3004:3004 -e DATABASE_URL=${{secrets.DATABASE_URL}} prashantflick/dummy-bank:latest
 
